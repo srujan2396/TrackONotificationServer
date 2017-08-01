@@ -17,13 +17,14 @@ function listenForNotificationRequests() {
   requests.on('child_added', function(requestSnapshot) {
     var request = requestSnapshot.val();
     sendNotificationToUser(
-      request.phno,
+      request.fphno,
       request.fname,
       request.message,
-      request.fromphno,
-      request.name,
+      request.selfphone,
+      request.selfname,
       function() {
-        requestSnapshot.ref.remove();
+       // requestSnapshot.ref.remove();
+       console.log("notification sended");
       }
     );
   }, function(error) {
@@ -32,7 +33,7 @@ function listenForNotificationRequests() {
    console.log("sended notification");
 }
 
-function sendNotificationToUser(phno,username, message,fromphno,name, onSuccess) {
+function sendNotificationToUser(fphno,fname, message,selfphno,selfname, onSuccess) {
   request({
     url: 'https://fcm.googleapis.com/fcm/send',
     method: 'POST',
@@ -48,16 +49,17 @@ function sendNotificationToUser(phno,username, message,fromphno,name, onSuccess)
     //     click_action: "com.example.srujansai.myapplication_TARGET_REQUEST"
     //  },
     data:{
-         title: "Location Request From "+username,
+         notification:"true",
+         title: "Location Request From "+fname,
          icon: "ic_action_locatio",
          body: message,
          click_action: "com.example.srujansai.myapplication_TARGET_REQUEST",
-         phno:phno,
-         name:username,
-         fromphno:fromphno,
-         fromname:name
+         phno:fphno,
+         name:fname,
+         fromphno:selfphno,
+         fromname:selfname
     },
-      to : '/topics/TRACKO_'+phno
+      to : '/topics/TRACKO_'+fphno
     })
   }, function(error, response, body) {
     if (error) { console.error(error); }
@@ -70,5 +72,69 @@ function sendNotificationToUser(phno,username, message,fromphno,name, onSuccess)
   });
 }
 
+function AcceptRequests() {
+  var requests = ref.child('acceptrequests');
+  requests.on('child_added', function(requestSnapshot) {
+    var request = requestSnapshot.val();
+    sendAcceptDataToUser(
+
+      request.fname,
+       request.fphno,
+      request.message,
+      request.selfname,
+      request.selfphno,
+      request.status,
+      function() {
+       // requestSnapshot.ref.remove();
+       console.log("readed")
+      }
+    );
+  }, function(error) {
+    console.error(error);
+  });
+   console.log("sended notification");
+}
+
+function sendAcceptDataToUser(fname,fphno,message,selfname,selfphno,status, onSuccess) {
+  request({
+    url: 'https://fcm.googleapis.com/fcm/send',
+    method: 'POST',
+    headers: {
+      'Content-Type' :' application/json',
+      'Authorization': 'key='+API_KEY
+    },
+    body: JSON.stringify({
+    //   notification: {
+    //     title: "Location Request From "+username,
+    //     icon: "ic_action_locatio",
+    //     body: message,
+    //     click_action: "com.example.srujansai.myapplication_TARGET_REQUEST"
+    //  },
+    data:{
+         notification:"false",
+         fname:fname,
+         fphno:fphno,
+         message:message,
+         selfname:selfname,
+         selfphno:selfphno,
+         status:status
+
+
+    },
+      to : '/topics/TRACKO_'+fphno
+    })
+  }, function(error, response, body) {
+    if (error) { console.error(error); }
+    else if (response.statusCode >= 400) { 
+      console.error('HTTP Error: '+response.statusCode+' - '+response.statusMessage); 
+    }
+    else {
+      onSuccess();
+    }
+  });
+}
+
+
 // start listening
 listenForNotificationRequests();
+AcceptRequests();
